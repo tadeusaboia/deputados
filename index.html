@@ -3,12 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Consulta pública e transparente aos gastos da Cota Parlamentar (CEAP) dos Deputados Federais do Brasil em 2025 e 2026 via API Dados Abertos." />
-  <title>Transparência Parlamentar • Gastos dos Deputados (2025–2026)</title>
+  <meta name="description" content="Painel de Business Intelligence (BI) para análise interativa dos gastos da Cota Parlamentar (CEAP) dos Deputados Federais em 2025 e 2026." />
+  <title>BI Parlamentar • Painel Analítico de Gastos (2025–2026)</title>
   <!-- Favicon SVG embutido para publicação limpa no GitHub Pages -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230f172a'/%3E%3Cpath d='M18 42h28v4H18zm4-18h4v14h-4zm8-6h4v20h-4zm8 10h4v10h-4z' fill='%2334d399'/%3E%3C/svg%3E" />
   <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- D3.js v7 para visualizações analíticas -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
   <!-- Fonte Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -38,25 +40,58 @@
         </div>
         <div>
           <h1 class="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
-            Transparência Parlamentar (2025 – 2026)
+            BI Parlamentar • Painel Analítico (2025 – 2026)
           </h1>
           <p class="text-xs text-slate-500">
-            Cota para o Exercício da Atividade Parlamentar • Câmara dos Deputados
+            Business Intelligence aplicado à Cota Parlamentar (CEAP) • Câmara dos Deputados
           </p>
         </div>
       </div>
 
       <div class="flex items-center gap-2 self-start sm:self-auto">
-        <span class="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+        <button
+          type="button"
+          id="btn-toggle-bi-info"
+          class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition cursor-pointer"
+        >
+          <span>? O que é este BI</span>
+        </button>
+        <span class="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-          API Oficial Ao Vivo
+          ETL Ao Vivo
         </span>
       </div>
     </div>
   </header>
 
+  <!-- Banner Didático Expansível sobre Business Intelligence -->
+  <section id="bi-explainer-banner" class="hidden bg-slate-900 text-slate-100 border-b border-slate-800">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="space-y-1.5 max-w-3xl">
+        <span class="inline-block text-[11px] font-bold uppercase tracking-wider text-emerald-400">
+          Conceito de Business Intelligence (BI)
+        </span>
+        <h2 class="text-sm sm:text-base font-bold text-white">
+          Transformando dados brutos da API em decisões e descobertas visuais
+        </h2>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Enquanto uma tabela comum mostra centenas de notas fiscais isoladas, este <strong>BI</strong> executa três etapas:
+          <strong>1) Coleta (ETL)</strong> da API da Câmara, <strong>2) Modelagem</strong> em indicadores (KPIs, média mensal, concentração por fornecedor) e
+          <strong>3) Visualização Interativa</strong> com filtro cruzado — clique em qualquer barra dos gráficos para filtrar os demais painéis instantaneamente.
+        </p>
+      </div>
+      <button
+        type="button"
+        id="btn-close-bi-info"
+        class="px-3.5 py-2 text-xs font-semibold bg-white/10 hover:bg-white/20 text-white rounded-xl transition cursor-pointer shrink-0"
+      >
+        Entendi
+      </button>
+    </div>
+  </section>
+
   <!-- Conteúdo Principal -->
-  <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
 
     <!-- Navegação por Abas -->
     <nav aria-label="Navegação principal" class="grid grid-cols-1 sm:inline-flex gap-1.5 bg-slate-200/70 p-1.5 rounded-2xl w-full sm:w-auto">
@@ -65,7 +100,7 @@
         id="tab-consulta"
         class="px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl bg-white text-slate-900 shadow-xs transition cursor-pointer"
       >
-        1. Consulta por Deputado
+        1. Dashboard Analítico (BI)
       </button>
       <button
         type="button"
@@ -79,7 +114,7 @@
         id="tab-bancada"
         class="px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl text-slate-600 hover:text-slate-900 transition cursor-pointer"
       >
-        3. Deputados por Estado
+        3. Bancada por Estado
       </button>
     </nav>
 
@@ -134,18 +169,18 @@
       <!-- Card Orientativo / Estado Inicial -->
       <div id="feedback-box" class="bg-white border border-slate-200 rounded-2xl p-8 text-center">
         <p id="feedback-title" class="text-sm sm:text-base font-semibold text-slate-800">
-          Selecione um Estado ou digite o nome do deputado
+          Selecione um Estado ou digite o nome do deputado para abrir o Dashboard BI
         </p>
         <p id="feedback-subtitle" class="text-xs sm:text-sm text-slate-500 mt-1">
-          Compare os gastos registrados na Cota Parlamentar nos anos de 2025 e 2026 e acesse as notas fiscais.
+          O painel calculará automaticamente os KPIs, evolução mensal comparativa (2025 vs 2026), principais categorias e fornecedores.
         </p>
       </div>
 
-      <!-- Painel de Resultados do Deputado Selecionado -->
+      <!-- Painel Analítico BI do Deputado Selecionado -->
       <section id="expenses-section" class="hidden space-y-6">
 
-        <!-- Cabeçalho do Deputado -->
-        <div class="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <!-- Cabeçalho do Deputado + Filtro Global de Período do BI -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div class="flex items-center gap-3.5">
             <img
               id="dep-photo"
@@ -154,59 +189,153 @@
               class="w-14 h-18 rounded-xl object-cover object-top bg-slate-100 border border-slate-200 shrink-0"
             />
             <div>
+              <span class="inline-block text-[11px] font-semibold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md mb-1">
+                Perfil Analítico
+              </span>
               <h2 id="dep-name" class="text-lg font-bold text-slate-900"></h2>
               <p id="dep-info" class="text-xs sm:text-sm text-slate-500"></p>
             </div>
           </div>
-          <div class="sm:text-right border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100">
-            <span class="block text-xs text-slate-500">Soma Total (2025 + 2026)</span>
-            <span id="total-geral" class="text-xl sm:text-2xl font-bold text-slate-900">R$ 0,00</span>
+
+          <!-- Slicer (Fatiador de Período típico de BI) -->
+          <div class="flex flex-wrap items-center gap-2 border-t lg:border-t-0 pt-3 lg:pt-0 border-slate-100">
+            <span class="text-xs font-semibold text-slate-500 mr-1">Período BI:</span>
+            <button
+              type="button"
+              data-bi-year="ALL"
+              class="bi-year-filter px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-900 text-white transition cursor-pointer"
+            >
+              2025 + 2026
+            </button>
+            <button
+              type="button"
+              data-bi-year="2025"
+              class="bi-year-filter px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition cursor-pointer"
+            >
+              Somente 2025
+            </button>
+            <button
+              type="button"
+              data-bi-year="2026"
+              class="bi-year-filter px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition cursor-pointer"
+            >
+              Somente 2026
+            </button>
           </div>
         </div>
 
-        <!-- Cards Comparativos: 2025 e 2026 -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Barra de Filtro Cruzado Ativo (Cross-Filtering) -->
+        <div id="bi-active-filter-bar" class="hidden bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 flex items-center justify-between gap-3">
+          <p class="text-xs font-medium text-amber-900">
+            Filtro cruzado ativo: <strong id="bi-active-filter-label"></strong>
+          </p>
           <button
             type="button"
-            id="card-2025"
-            class="text-left bg-white border-2 border-slate-900 rounded-2xl p-5 transition cursor-pointer"
+            id="btn-clear-cross-filter"
+            class="text-xs font-semibold text-amber-900 underline hover:no-underline cursor-pointer"
           >
-            <div class="flex items-center justify-between mb-1">
-              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Ano 2025</span>
-              <span id="count-2025" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">0 notas</span>
-            </div>
-            <p id="sum-2025" class="text-2xl sm:text-3xl font-bold text-slate-900 mt-1">R$ 0,00</p>
-            <p class="text-xs text-slate-400 mt-2">Clique para listar as notas de 2025</p>
-          </button>
-
-          <button
-            type="button"
-            id="card-2026"
-            class="text-left bg-white border border-slate-200 hover:border-slate-400 rounded-2xl p-5 transition cursor-pointer"
-          >
-            <div class="flex items-center justify-between mb-1">
-              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Ano 2026</span>
-              <span id="count-2026" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">0 notas</span>
-            </div>
-            <p id="sum-2026" class="text-2xl sm:text-3xl font-bold text-slate-900 mt-1">R$ 0,00</p>
-            <p class="text-xs text-slate-400 mt-2">Clique para listar as notas de 2026</p>
+            Limpar filtro
           </button>
         </div>
 
-        <!-- Tabela de Notas Fiscais do Ano Ativo -->
+        <!-- Linha de 4 KPIs Executivos (Cartões de Indicadores) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Gasto Total no Período</span>
+            <p id="kpi-total" class="text-2xl font-bold text-slate-900 mt-1">R$ 0,00</p>
+            <p id="kpi-total-sub" class="text-xs text-slate-500 mt-1.5">0 notas fiscais</p>
+          </div>
+
+          <div class="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Média Mensal</span>
+            <p id="kpi-media-mensal" class="text-2xl font-bold text-slate-900 mt-1">R$ 0,00</p>
+            <p id="kpi-media-sub" class="text-xs text-slate-500 mt-1.5">Base: meses com despesa</p>
+          </div>
+
+          <div class="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Ticket Médio por Nota</span>
+            <p id="kpi-ticket-medio" class="text-2xl font-bold text-slate-900 mt-1">R$ 0,00</p>
+            <p id="kpi-maior-nota" class="text-xs text-slate-500 mt-1.5">Maior nota: R$ 0,00</p>
+          </div>
+
+          <div class="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Maior Categoria</span>
+            <p id="kpi-top-cat-pct" class="text-2xl font-bold text-emerald-700 mt-1">0%</p>
+            <p id="kpi-top-cat-nome" class="text-xs text-slate-500 mt-1.5 truncate" title="">—</p>
+          </div>
+        </div>
+
+        <!-- Gráfico 1: Evolução Mensal Comparativa (2025 vs 2026) via D3.js -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+            <div>
+              <h3 class="text-sm sm:text-base font-bold text-slate-900">
+                Evolução Mensal Comparativa (2025 vs 2026)
+              </h3>
+              <p class="text-xs text-slate-500">
+                Série histórica mês a mês • Passe o cursor ou toque nas barras para inspecionar valores
+              </p>
+            </div>
+            <div class="flex items-center gap-4 text-xs font-medium">
+              <span class="inline-flex items-center gap-1.5 text-slate-700">
+                <span class="w-3 h-3 rounded-xs bg-slate-900"></span> 2025
+              </span>
+              <span class="inline-flex items-center gap-1.5 text-slate-700">
+                <span class="w-3 h-3 rounded-xs bg-emerald-500"></span> 2026
+              </span>
+            </div>
+          </div>
+          <div id="chart-mensal-container" class="w-full overflow-x-auto"></div>
+        </div>
+
+        <!-- Gráficos 2 e 3: Categorias + Top 5 Fornecedores (Interativos com Cross-Filter) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Distribuição por Categoria -->
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6">
+            <div class="mb-4">
+              <h3 class="text-sm sm:text-base font-bold text-slate-900">
+                Gastos por Categoria de Despesa
+              </h3>
+              <p class="text-xs text-slate-500">
+                Clique em uma categoria para filtrar os fornecedores e notas abaixo
+              </p>
+            </div>
+            <div id="chart-categorias" class="space-y-3"></div>
+          </div>
+
+          <!-- Top 5 Fornecedores -->
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6">
+            <div class="mb-4">
+              <h3 class="text-sm sm:text-base font-bold text-slate-900">
+                Top 5 Fornecedores Mais Contratados
+              </h3>
+              <p class="text-xs text-slate-500">
+                Concentração de recursos por empresa/prestador no período selecionado
+              </p>
+            </div>
+            <div id="chart-fornecedores" class="space-y-3"></div>
+          </div>
+        </div>
+
+        <!-- Tabela Analítica (Drill-through de Notas Fiscais) -->
         <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
-          <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
-            <h3 id="table-title" class="text-sm sm:text-base font-semibold text-slate-800">
-              Detalhamento — 2025
-            </h3>
-            <span id="table-subtitle" class="text-xs text-slate-500"></span>
+          <div class="px-5 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50/70">
+            <div>
+              <h3 id="table-title" class="text-sm sm:text-base font-semibold text-slate-800">
+                Detalhamento Analítico (Drill-Through)
+              </h3>
+              <p class="text-xs text-slate-500">
+                Registros individuais que compõem os indicadores acima
+              </p>
+            </div>
+            <span id="table-subtitle" class="text-xs font-medium text-slate-600"></span>
           </div>
 
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-slate-200 text-sm">
               <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase">
                 <tr>
-                  <th class="px-5 py-3">Data</th>
+                  <th class="px-5 py-3">Ano / Data</th>
                   <th class="px-5 py-3">Tipo de Despesa</th>
                   <th class="px-5 py-3">Fornecedor</th>
                   <th class="px-5 py-3 text-right">Valor</th>
@@ -357,54 +486,54 @@
     ];
 
     let gastosPorAno = { 2025: [], 2026: [] };
+    let biAnoFiltro = 'ALL'; // 'ALL' | '2025' | '2026'
+    let biCategoriaFiltro = null; // Filtro cruzado por categoria
     let bancadaAtual = [];
     let rankingCarregado = false;
     let bancadaCarregada = false;
 
-    // Preenche os seletores de Estado (UF)
+    const MESES_NOMES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+    // Popula os selects de Estado nas 3 abas
     function inicializarSeletoresUF() {
-      const opcoesEstados = ESTADOS_BRASIL.map(([uf, nome]) => `<option value="${uf}">${nome}</option>`).join('');
+      const opcoesEstados = ESTADOS_BRASIL
+        .map(([uf, nome]) => `<option value="${uf}">${nome}</option>`)
+        .join('');
 
       document.getElementById('estado-select').innerHTML =
         `<option value="">Todos os Estados</option>${opcoesEstados}`;
 
-      const rankingSelect = document.getElementById('ranking-estado-select');
-      rankingSelect.innerHTML = `${opcoesEstados}<option value="ALL">Brasil (Amostra Nacional • 40 deputados)</option>`;
-      rankingSelect.value = 'RN';
+      document.getElementById('ranking-estado-select').innerHTML =
+        `<option value="RN">Rio Grande do Norte (RN)</option>` +
+        ESTADOS_BRASIL.filter(([uf]) => uf !== 'RN').map(([uf, nome]) => `<option value="${uf}">${nome}</option>`).join('') +
+        `<option value="ALL">Brasil (Amostra Nacional • Todos)</option>`;
 
-      const bancadaSelect = document.getElementById('bancada-estado-select');
-      bancadaSelect.innerHTML = opcoesEstados;
-      bancadaSelect.value = 'RN';
+      document.getElementById('bancada-estado-select').innerHTML =
+        `<option value="RN">Rio Grande do Norte (RN)</option>` +
+        ESTADOS_BRASIL.filter(([uf]) => uf !== 'RN').map(([uf, nome]) => `<option value="${uf}">${nome}</option>`).join('');
     }
 
-    // Formata Moeda Real Brasileira
     function formatBRL(valor) {
-      return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL'
-      }).format(Number(valor) || 0);
+      return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(valor) || 0);
     }
 
-    // Formata data ISO para DD/MM/AAAA
     function formatDate(isoDate) {
       if (!isoDate) return '—';
       const [y, m, d] = isoDate.split('T')[0].split('-');
       return (y && m && d) ? `${d}/${m}/${y}` : isoDate;
     }
 
-    // Remove acentos para buscas
     function normalizeText(str) {
-      return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+      return (str || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
     }
 
-    // Avatar SVG fallback caso a foto oficial falhe
     function getAvatarFallback(nome) {
       const iniciais = (nome || 'DP').split(' ').filter(Boolean).slice(0, 2).map(n => n[0]).join('');
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="120"><rect width="100" height="120" fill="#e2e8f0"/><text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle" font-family="Inter,sans-serif" font-size="32" font-weight="600" fill="#475569">${iniciais}</text></svg>`;
       return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
     }
 
-    // Chamada HTTP com fallback automático de CORS
+    // Requisição na API com fallback automático caso o preview bloqueie CORS direto
     async function fetchApi(url) {
       const rotas = [
         url,
@@ -423,7 +552,91 @@
       throw new Error('Falha ao conectar à API da Câmara.');
     }
 
-    // Busca todas as páginas de despesas de um deputado em um ano específico
+    // Controle de Abas
+    function ativarAba(aba) {
+      const abas = ['consulta', 'ranking', 'bancada'];
+      abas.forEach(nome => {
+        const btn = document.getElementById(`tab-${nome}`);
+        const painel = document.getElementById(`panel-${nome}`);
+        const ativa = nome === aba;
+        painel.classList.toggle('hidden', !ativa);
+        btn.className = ativa
+          ? 'px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl bg-white text-slate-900 shadow-xs transition cursor-pointer'
+          : 'px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl text-slate-600 hover:text-slate-900 transition cursor-pointer';
+      });
+
+      if (aba === 'ranking' && !rankingCarregado) {
+        gerarTop10Ranking();
+      }
+      if (aba === 'bancada' && !bancadaCarregada) {
+        carregarBancadaEstado();
+      }
+    }
+
+    // Busca de Deputados na Aba 1
+    async function buscarDeputados(e) {
+      if (e) e.preventDefault();
+      const uf = document.getElementById('estado-select').value.trim();
+      const nome = document.getElementById('deputado-input').value.trim();
+
+      const wrapper = document.getElementById('deputados-list-wrapper');
+      const titleEl = document.getElementById('deputados-list-title');
+      const listEl = document.getElementById('deputados-list');
+      const feedbackBox = document.getElementById('feedback-box');
+
+      if (!uf && !nome) {
+        feedbackBox.classList.remove('hidden');
+        document.getElementById('feedback-title').textContent = 'Preencha pelo menos um campo';
+        document.getElementById('feedback-subtitle').textContent = 'Escolha um Estado ou digite o nome de um deputado para iniciar.';
+        return;
+      }
+
+      const params = new URLSearchParams({ ordem: 'ASC', ordenarPor: 'nome' });
+      if (uf) params.append('siglaUf', uf);
+      if (nome) params.append('nome', nome);
+
+      wrapper.classList.remove('hidden');
+      titleEl.textContent = 'Buscando deputados na API...';
+      listEl.innerHTML = '';
+
+      try {
+        const json = await fetchApi(`${BASE_API}/deputados?${params.toString()}`);
+        const lista = json.dados || [];
+
+        if (lista.length === 0) {
+          titleEl.textContent = 'Nenhum deputado encontrado com esses critérios.';
+          return;
+        }
+
+        titleEl.textContent = `${lista.length} ${lista.length === 1 ? 'deputado encontrado' : 'deputados encontrados'} — clique para abrir o painel BI:`;
+        listEl.innerHTML = '';
+
+        lista.forEach(dep => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 hover:border-slate-900 hover:bg-slate-50 text-left transition cursor-pointer';
+          const fallback = getAvatarFallback(dep.nome);
+          btn.innerHTML = `
+            <img src="${dep.urlFoto || fallback}" alt="${dep.nome}" class="w-10 h-12 rounded-lg object-cover object-top bg-slate-100 shrink-0" />
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-slate-900 truncate">${dep.nome}</p>
+              <p class="text-xs text-slate-500">${dep.siglaPartido || 'S/P'} • ${dep.siglaUf || ''}</p>
+            </div>
+          `;
+          btn.querySelector('img').addEventListener('error', function () { this.src = fallback; }, { once: true });
+          btn.addEventListener('click', () => carregarGastosDeputado(dep));
+          listEl.appendChild(btn);
+        });
+
+        if (lista.length === 1) {
+          carregarGastosDeputado(lista[0]);
+        }
+      } catch (err) {
+        titleEl.textContent = 'Erro ao consultar a API. Tente novamente em instantes.';
+      }
+    }
+
+    // Busca todas as páginas de despesas de um ano (2025 ou 2026)
     async function buscarDespesasAno(deputadoId, ano) {
       let pagina = 1;
       let todosItens = [];
@@ -442,108 +655,20 @@
       return todosItens;
     }
 
-    // Normaliza valores líquidos (converte saldo devedor negativo da API em valor positivo gasto)
+    // Normaliza valores líquidos negativos da API para valor positivo real gasto
     function calcularSomaDespesas(lista) {
       const somaBruta = lista.reduce((acc, item) => acc + (Number(item.valorLiquido) || 0), 0);
       return Math.abs(somaBruta);
-    }
-
-    // =========================================================================
-    // NAVEGAÇÃO ENTRE ABAS
-    // =========================================================================
-    function ativarAba(nomeAba) {
-      const abas = ['consulta', 'ranking', 'bancada'];
-      abas.forEach(aba => {
-        const btn = document.getElementById(`tab-${aba}`);
-        const panel = document.getElementById(`panel-${aba}`);
-        if (aba === nomeAba) {
-          panel.classList.remove('hidden');
-          btn.className = 'px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl bg-white text-slate-900 shadow-xs transition cursor-pointer';
-        } else {
-          panel.classList.add('hidden');
-          btn.className = 'px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl text-slate-600 hover:text-slate-900 transition cursor-pointer';
-        }
-      });
-
-      if (nomeAba === 'ranking' && !rankingCarregado) {
-        gerarTop10Ranking();
-      }
-      if (nomeAba === 'bancada' && !bancadaCarregada) {
-        carregarBancadaEstado();
-      }
-    }
-
-    // =========================================================================
-    // ABA 1: CONSULTA INDIVIDUAL (2025 E 2026)
-    // =========================================================================
-    async function buscarDeputados(e) {
-      if (e) e.preventDefault();
-
-      const uf = document.getElementById('estado-select').value.trim();
-      const nome = document.getElementById('deputado-input').value.trim();
-
-      if (!uf && !nome) {
-        document.getElementById('feedback-box').classList.remove('hidden');
-        document.getElementById('feedback-title').textContent = 'Preencha pelo menos um campo';
-        document.getElementById('feedback-subtitle').textContent = 'Escolha um Estado ou digite o nome de um deputado para iniciar.';
-        return;
-      }
-
-      const params = new URLSearchParams({ ordem: 'ASC', ordenarPor: 'nome' });
-      if (uf) params.append('siglaUf', uf);
-      if (nome) params.append('nome', nome);
-
-      const wrapper = document.getElementById('deputados-list-wrapper');
-      const title = document.getElementById('deputados-list-title');
-      const listEl = document.getElementById('deputados-list');
-
-      wrapper.classList.remove('hidden');
-      title.textContent = 'Buscando deputados na API...';
-      listEl.innerHTML = '';
-
-      try {
-        const json = await fetchApi(`${BASE_API}/deputados?${params.toString()}`);
-        const lista = json.dados || [];
-
-        if (lista.length === 0) {
-          title.textContent = 'Nenhum deputado encontrado com esses filtros.';
-          return;
-        }
-
-        title.textContent = `${lista.length} ${lista.length === 1 ? 'deputado encontrado' : 'deputados encontrados'} — clique para ver os gastos:`;
-        listEl.innerHTML = '';
-
-        lista.forEach(dep => {
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 hover:border-slate-900 hover:bg-slate-50 text-left transition cursor-pointer';
-
-          const fallback = getAvatarFallback(dep.nome);
-          btn.innerHTML = `
-            <img src="${dep.urlFoto || fallback}" alt="${dep.nome}" class="w-10 h-12 rounded-lg object-cover object-top bg-slate-100 shrink-0" />
-            <div class="min-w-0">
-              <p class="text-sm font-semibold text-slate-900 truncate">${dep.nome}</p>
-              <p class="text-xs text-slate-500">${dep.siglaPartido || 'S/P'} • ${dep.siglaUf || ''}</p>
-            </div>
-          `;
-
-          btn.querySelector('img').addEventListener('error', function () { this.src = fallback; }, { once: true });
-          btn.addEventListener('click', () => carregarGastosDeputado(dep));
-          listEl.appendChild(btn);
-        });
-
-        if (lista.length === 1) {
-          carregarGastosDeputado(lista[0]);
-        }
-      } catch (err) {
-        title.textContent = 'Erro ao consultar a API. Tente novamente em instantes.';
-      }
     }
 
     async function carregarGastosDeputado(dep) {
       document.getElementById('feedback-box').classList.add('hidden');
       document.getElementById('deputados-list-wrapper').classList.add('hidden');
       document.getElementById('expenses-section').classList.remove('hidden');
+
+      biAnoFiltro = 'ALL';
+      biCategoriaFiltro = null;
+      atualizarBotoesFiltroAnoBI();
 
       const fallback = getAvatarFallback(dep.nome);
       const photoEl = document.getElementById('dep-photo');
@@ -552,11 +677,12 @@
 
       document.getElementById('dep-name').textContent = dep.nome;
       document.getElementById('dep-info').textContent = `${dep.siglaPartido || 'Sem partido'} • Estado: ${dep.siglaUf || '—'}`;
-      document.getElementById('sum-2025').textContent = 'Carregando...';
-      document.getElementById('sum-2026').textContent = 'Carregando...';
-      document.getElementById('total-geral').textContent = '...';
+      document.getElementById('kpi-total').textContent = 'Carregando...';
+      document.getElementById('kpi-media-mensal').textContent = '...';
+      document.getElementById('kpi-ticket-medio').textContent = '...';
+      document.getElementById('kpi-top-cat-pct').textContent = '...';
       document.getElementById('expenses-tbody').innerHTML = `
-        <tr><td colspan="5" class="px-5 py-8 text-center text-slate-400">Consultando notas fiscais de 2025 e 2026...</td></tr>
+        <tr><td colspan="5" class="px-5 py-8 text-center text-slate-400">Extraindo e modelando dados de 2025 e 2026 da API...</td></tr>
       `;
 
       try {
@@ -565,20 +691,13 @@
           buscarDespesasAno(dep.id, 2026)
         ]);
 
-        gastosPorAno = { 2025: despesas2025, 2026: despesas2026 };
+        // Normaliza cada registro com ano explícito e valor absoluto
+        gastosPorAno = {
+          2025: despesas2025.map(d => ({ ...d, _ano: 2025, _valor: Math.abs(Number(d.valorLiquido) || 0) })),
+          2026: despesas2026.map(d => ({ ...d, _ano: 2026, _valor: Math.abs(Number(d.valorLiquido) || 0) }))
+        };
 
-        const total2025 = calcularSomaDespesas(despesas2025);
-        const total2026 = calcularSomaDespesas(despesas2026);
-
-        document.getElementById('sum-2025').textContent = formatBRL(total2025);
-        document.getElementById('count-2025').textContent = `${despesas2025.length} notas`;
-
-        document.getElementById('sum-2026').textContent = formatBRL(total2026);
-        document.getElementById('count-2026').textContent = `${despesas2026.length} notas`;
-
-        document.getElementById('total-geral').textContent = formatBRL(total2025 + total2026);
-
-        selecionarAnoTabela(2025);
+        atualizarDashboardBI();
       } catch (err) {
         document.getElementById('expenses-section').classList.add('hidden');
         document.getElementById('feedback-box').classList.remove('hidden');
@@ -587,37 +706,309 @@
       }
     }
 
-    function selecionarAnoTabela(ano) {
-      const card2025 = document.getElementById('card-2025');
-      const card2026 = document.getElementById('card-2026');
+    function atualizarBotoesFiltroAnoBI() {
+      document.querySelectorAll('.bi-year-filter').forEach(btn => {
+        const ativo = btn.dataset.biYear === biAnoFiltro;
+        btn.className = ativo
+          ? 'bi-year-filter px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-900 text-white transition cursor-pointer'
+          : 'bi-year-filter px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition cursor-pointer';
+      });
+    }
 
-      if (ano === 2025) {
-        card2025.className = 'text-left bg-white border-2 border-slate-900 rounded-2xl p-5 transition cursor-pointer';
-        card2026.className = 'text-left bg-white border border-slate-200 hover:border-slate-400 rounded-2xl p-5 transition cursor-pointer';
+    // Orquestra todos os KPIs, gráficos D3 e tabelas do BI com base nos filtros ativos
+    function atualizarDashboardBI() {
+      let basePeriodo = [];
+      if (biAnoFiltro === '2025') basePeriodo = [...gastosPorAno[2025]];
+      else if (biAnoFiltro === '2026') basePeriodo = [...gastosPorAno[2026]];
+      else basePeriodo = [...gastosPorAno[2025], ...gastosPorAno[2026]];
+
+      // Barra de filtro cruzado
+      const filterBar = document.getElementById('bi-active-filter-bar');
+      if (biCategoriaFiltro) {
+        filterBar.classList.remove('hidden');
+        document.getElementById('bi-active-filter-label').textContent = biCategoriaFiltro;
       } else {
-        card2026.className = 'text-left bg-white border-2 border-slate-900 rounded-2xl p-5 transition cursor-pointer';
-        card2025.className = 'text-left bg-white border border-slate-200 hover:border-slate-400 rounded-2xl p-5 transition cursor-pointer';
+        filterBar.classList.add('hidden');
       }
 
-      const lista = gastosPorAno[ano] || [];
-      document.getElementById('table-title').textContent = `Detalhamento de Gastos — ${ano}`;
-      document.getElementById('table-subtitle').textContent = `${lista.length} registros`;
+      const dadosFiltrados = biCategoriaFiltro
+        ? basePeriodo.filter(item => (item.tipoDespesa || 'Outras despesas') === biCategoriaFiltro)
+        : basePeriodo;
+
+      // 1. Cálculo dos KPIs
+      const total = dadosFiltrados.reduce((acc, item) => acc + item._valor, 0);
+      const qtdNotas = dadosFiltrados.length;
+      const ticketMedio = qtdNotas > 0 ? total / qtdNotas : 0;
+      const maiorNota = dadosFiltrados.reduce((max, item) => Math.max(max, item._valor), 0);
+
+      const mesesUnicos = new Set(
+        dadosFiltrados.map(item => `${item._ano}-${item.mes || (item.dataDocumento || '').slice(5, 7)}`)
+      );
+      const qtdMeses = Math.max(mesesUnicos.size, 1);
+      const mediaMensal = qtdNotas > 0 ? total / qtdMeses : 0;
+
+      // Agrupamento por Categoria
+      const mapaCategorias = {};
+      basePeriodo.forEach(item => {
+        const cat = item.tipoDespesa || 'Outras despesas';
+        mapaCategorias[cat] = (mapaCategorias[cat] || 0) + item._valor;
+      });
+      const categoriasOrdenadas = Object.entries(mapaCategorias).sort((a, b) => b[1] - a[1]);
+      const totalBasePeriodo = basePeriodo.reduce((acc, item) => acc + item._valor, 0);
+
+      document.getElementById('kpi-total').textContent = formatBRL(total);
+      document.getElementById('kpi-total-sub').textContent = `${qtdNotas} ${qtdNotas === 1 ? 'nota fiscal' : 'notas fiscais'}`;
+
+      document.getElementById('kpi-media-mensal').textContent = formatBRL(mediaMensal);
+      document.getElementById('kpi-media-sub').textContent = `Distribuído em ${mesesUnicos.size} ${mesesUnicos.size === 1 ? 'mês' : 'meses'}`;
+
+      document.getElementById('kpi-ticket-medio').textContent = formatBRL(ticketMedio);
+      document.getElementById('kpi-maior-nota').textContent = `Maior nota: ${formatBRL(maiorNota)}`;
+
+      if (categoriasOrdenadas.length > 0 && totalBasePeriodo > 0) {
+        const [topCatNome, topCatValor] = categoriasOrdenadas[0];
+        const pctTop = ((topCatValor / totalBasePeriodo) * 100).toFixed(1);
+        document.getElementById('kpi-top-cat-pct').textContent = `${pctTop}%`;
+        const nomeEl = document.getElementById('kpi-top-cat-nome');
+        nomeEl.textContent = topCatNome;
+        nomeEl.title = topCatNome;
+      } else {
+        document.getElementById('kpi-top-cat-pct').textContent = '0%';
+        document.getElementById('kpi-top-cat-nome').textContent = 'Sem registros';
+      }
+
+      // 2. Renderiza Gráfico D3 de Evolução Mensal (2025 vs 2026)
+      renderizarGraficoMensalD3();
+
+      // 3. Renderiza Gráfico Interativo de Categorias
+      renderizarGraficoCategorias(categoriasOrdenadas, totalBasePeriodo);
+
+      // 4. Renderiza Top 5 Fornecedores
+      renderizarGraficoFornecedores(dadosFiltrados, total);
+
+      // 5. Renderiza Tabela Drill-Through
+      renderizarTabelaBI(dadosFiltrados);
+    }
+
+    function renderizarGraficoMensalD3() {
+      const container = document.getElementById('chart-mensal-container');
+      container.innerHTML = '';
+
+      const dadosMeses = MESES_NOMES.map((nomeMes, idx) => {
+        const mesNum = idx + 1;
+        const filtrarMes = (lista) => lista
+          .filter(item => {
+            const m = Number(item.mes) || Number((item.dataDocumento || '').split('-')[1]);
+            const okMes = m === mesNum;
+            const okCat = !biCategoriaFiltro || (item.tipoDespesa || 'Outras despesas') === biCategoriaFiltro;
+            return okMes && okCat;
+          })
+          .reduce((acc, i) => acc + i._valor, 0);
+
+        return {
+          mes: nomeMes,
+          v2025: biAnoFiltro === '2026' ? 0 : filtrarMes(gastosPorAno[2025]),
+          v2026: biAnoFiltro === '2025' ? 0 : filtrarMes(gastosPorAno[2026])
+        };
+      });
+
+      const width = Math.max(container.clientWidth || 720, 560);
+      const height = 240;
+      const margin = { top: 18, right: 16, bottom: 28, left: 64 };
+      const innerW = width - margin.left - margin.right;
+      const innerH = height - margin.top - margin.bottom;
+
+      const svg = d3.select(container)
+        .append('svg')
+        .attr('viewBox', `0 0 ${width} ${height}`)
+        .attr('class', 'w-full h-auto select-none');
+
+      const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+      const x0 = d3.scaleBand()
+        .domain(MESES_NOMES)
+        .rangeRound([0, innerW])
+        .paddingInner(0.24);
+
+      const x1 = d3.scaleBand()
+        .domain(['v2025', 'v2026'])
+        .rangeRound([0, x0.bandwidth()])
+        .padding(0.12);
+
+      const maxVal = d3.max(dadosMeses, d => Math.max(d.v2025, d.v2026)) || 1000;
+      const y = d3.scaleLinear()
+        .domain([0, maxVal * 1.12])
+        .nice()
+        .rangeRound([innerH, 0]);
+
+      g.append('g')
+        .attr('class', 'text-slate-200')
+        .call(d3.axisLeft(y).ticks(4).tickSize(-innerW).tickFormat(''))
+        .call(axis => axis.select('.domain').remove())
+        .call(axis => axis.selectAll('line').attr('stroke', '#e2e8f0').attr('stroke-dasharray', '3,3'));
+
+      g.append('g')
+        .call(d3.axisLeft(y).ticks(4).tickFormat(d => d === 0 ? 'R$ 0' : `R$ ${(d / 1000).toFixed(0)}k`))
+        .call(axis => axis.select('.domain').remove())
+        .call(axis => axis.selectAll('text').attr('fill', '#64748b').attr('font-size', '11px'));
+
+      g.append('g')
+        .attr('transform', `translate(0,${innerH})`)
+        .call(d3.axisBottom(x0).tickSizeOuter(0))
+        .call(axis => axis.select('.domain').attr('stroke', '#cbd5e1'))
+        .call(axis => axis.selectAll('text').attr('fill', '#475569').attr('font-size', '11px').attr('font-weight', '500'));
+
+      const tooltip = d3.select(container)
+        .style('position', 'relative')
+        .append('div')
+        .attr('class', 'pointer-events-none hidden absolute z-10 bg-slate-900 text-white text-xs rounded-lg px-2.5 py-1.5 shadow-md whitespace-nowrap');
+
+      const gruposMes = g.selectAll('.mes-group')
+        .data(dadosMeses)
+        .enter()
+        .append('g')
+        .attr('transform', d => `translate(${x0(d.mes)},0)`);
+
+      const series = [
+        { key: 'v2025', label: '2025', color: '#0f172a' },
+        { key: 'v2026', label: '2026', color: '#10b981' }
+      ];
+
+      series.forEach(serie => {
+        gruposMes.append('rect')
+          .attr('x', x1(serie.key))
+          .attr('y', d => y(d[serie.key]))
+          .attr('width', x1.bandwidth())
+          .attr('height', d => Math.max(0, innerH - y(d[serie.key])))
+          .attr('rx', 4)
+          .attr('fill', serie.color)
+          .attr('class', 'transition-opacity hover:opacity-80 cursor-pointer')
+          .on('mouseenter', function (event, d) {
+            tooltip
+              .html(`<strong>${d.mes}/${serie.label}</strong>: ${formatBRL(d[serie.key])}`)
+              .classed('hidden', false);
+          })
+          .on('mousemove', function (event) {
+            const [mx, my] = d3.pointer(event, container);
+            tooltip.style('left', `${Math.min(mx + 10, width - 150)}px`).style('top', `${Math.max(my - 36, 4)}px`);
+          })
+          .on('mouseleave', function () {
+            tooltip.classed('hidden', true);
+          });
+      });
+    }
+
+    function renderizarGraficoCategorias(categoriasOrdenadas, totalBasePeriodo) {
+      const container = document.getElementById('chart-categorias');
+      if (categoriasOrdenadas.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-400">Nenhuma despesa registrada neste período.</p>';
+        return;
+      }
+
+      const maxCat = categoriasOrdenadas[0][1] || 1;
+      container.innerHTML = categoriasOrdenadas.slice(0, 7).map(([cat, val]) => {
+        const pctTotal = totalBasePeriodo > 0 ? ((val / totalBasePeriodo) * 100).toFixed(1) : '0.0';
+        const pctBarra = Math.max(4, Math.round((val / maxCat) * 100));
+        const isAtivo = biCategoriaFiltro === cat;
+
+        return `
+          <button
+            type="button"
+            data-cat="${cat.replace(/"/g, '&quot;')}"
+            class="bi-cat-bar w-full text-left p-2 rounded-xl border transition cursor-pointer ${
+              isAtivo
+                ? 'bg-emerald-50/70 border-emerald-400'
+                : 'border-transparent hover:bg-slate-50 hover:border-slate-200'
+            }"
+          >
+            <div class="flex items-center justify-between text-xs mb-1 gap-2">
+              <span class="font-medium text-slate-700 truncate" title="${cat}">${cat}</span>
+              <span class="font-semibold text-slate-900 shrink-0">${formatBRL(val)} <span class="text-slate-400 font-normal">(${pctTotal}%)</span></span>
+            </div>
+            <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full ${isAtivo ? 'bg-emerald-600' : 'bg-slate-900'} rounded-full transition-all" style="width: ${pctBarra}%"></div>
+            </div>
+          </button>
+        `;
+      }).join('');
+
+      container.querySelectorAll('.bi-cat-bar').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const catClicada = btn.dataset.cat;
+          biCategoriaFiltro = (biCategoriaFiltro === catClicada) ? null : catClicada;
+          atualizarDashboardBI();
+        });
+      });
+    }
+
+    function renderizarGraficoFornecedores(dadosFiltrados, totalFiltrado) {
+      const container = document.getElementById('chart-fornecedores');
+      if (dadosFiltrados.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-400">Nenhum fornecedor encontrado para o filtro atual.</p>';
+        return;
+      }
+
+      const mapaForn = {};
+      dadosFiltrados.forEach(item => {
+        const nome = item.nomeFornecedor || 'Fornecedor não informado';
+        if (!mapaForn[nome]) mapaForn[nome] = { total: 0, notas: 0 };
+        mapaForn[nome].total += item._valor;
+        mapaForn[nome].notas += 1;
+      });
+
+      const top5 = Object.entries(mapaForn)
+        .sort((a, b) => b[1].total - a[1].total)
+        .slice(0, 5);
+
+      const maxForn = top5[0][1].total || 1;
+      container.innerHTML = top5.map(([nome, info], idx) => {
+        const pctTotal = totalFiltrado > 0 ? ((info.total / totalFiltrado) * 100).toFixed(1) : '0.0';
+        const pctBarra = Math.max(4, Math.round((info.total / maxForn) * 100));
+
+        return `
+          <div class="p-2 rounded-xl border border-slate-100 bg-slate-50/50">
+            <div class="flex items-center justify-between text-xs mb-1 gap-2">
+              <span class="font-semibold text-slate-800 truncate" title="${nome}">
+                ${idx + 1}. ${nome}
+              </span>
+              <span class="font-bold text-slate-900 shrink-0">${formatBRL(info.total)}</span>
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1.5">
+              <span>${info.notas} ${info.notas === 1 ? 'lançamento' : 'lançamentos'}</span>
+              <span>${pctTotal}% do total filtrado</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-200/70 rounded-full overflow-hidden">
+              <div class="h-full bg-emerald-600 rounded-full" style="width: ${pctBarra}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderizarTabelaBI(dadosFiltrados) {
+      const ordenados = [...dadosFiltrados].sort((a, b) =>
+        (b.dataDocumento || '').localeCompare(a.dataDocumento || '')
+      );
+
+      document.getElementById('table-subtitle').textContent = `${ordenados.length} registros exibidos`;
 
       const tbody = document.getElementById('expenses-tbody');
-      if (lista.length === 0) {
+      if (ordenados.length === 0) {
         tbody.innerHTML = `
-          <tr><td colspan="5" class="px-5 py-8 text-center text-slate-400">Nenhuma despesa registrada em ${ano}.</td></tr>
+          <tr><td colspan="5" class="px-5 py-8 text-center text-slate-400">Nenhuma despesa registrada para os filtros selecionados.</td></tr>
         `;
         return;
       }
 
-      tbody.innerHTML = lista.map(item => `
+      tbody.innerHTML = ordenados.map(item => `
         <tr class="hover:bg-slate-50 transition">
-          <td class="px-5 py-3 whitespace-nowrap text-xs text-slate-500">${formatDate(item.dataDocumento)}</td>
+          <td class="px-5 py-3 whitespace-nowrap text-xs text-slate-500">
+            <span class="font-semibold text-slate-700">${item._ano}</span> • ${formatDate(item.dataDocumento)}
+          </td>
           <td class="px-5 py-3 text-xs text-slate-700">${item.tipoDespesa || '—'}</td>
           <td class="px-5 py-3 text-xs font-medium text-slate-900">${item.nomeFornecedor || '—'}</td>
           <td class="px-5 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold text-slate-900">
-            ${formatBRL(Math.abs(Number(item.valorLiquido) || 0))}
+            ${formatBRL(item._valor)}
           </td>
           <td class="px-5 py-3 whitespace-nowrap text-center text-xs">
             ${item.urlDocumento
@@ -759,7 +1150,11 @@
           row.addEventListener('click', () => {
             ativarAba('consulta');
             carregarGastosDeputado(dep).then(() => {
-              if (anoFiltro === '2026') selecionarAnoTabela(2026);
+              if (anoFiltro === '2025' || anoFiltro === '2026') {
+                biAnoFiltro = anoFiltro;
+                atualizarBotoesFiltroAnoBI();
+                atualizarDashboardBI();
+              }
             });
           });
 
@@ -857,8 +1252,26 @@
 
     document.getElementById('search-form').addEventListener('submit', buscarDeputados);
     document.getElementById('estado-select').addEventListener('change', buscarDeputados);
-    document.getElementById('card-2025').addEventListener('click', () => selecionarAnoTabela(2025));
-    document.getElementById('card-2026').addEventListener('click', () => selecionarAnoTabela(2026));
+
+    document.querySelectorAll('.bi-year-filter').forEach(btn => {
+      btn.addEventListener('click', () => {
+        biAnoFiltro = btn.dataset.biYear;
+        atualizarBotoesFiltroAnoBI();
+        atualizarDashboardBI();
+      });
+    });
+
+    document.getElementById('btn-clear-cross-filter').addEventListener('click', () => {
+      biCategoriaFiltro = null;
+      atualizarDashboardBI();
+    });
+
+    document.getElementById('btn-toggle-bi-info').addEventListener('click', () => {
+      document.getElementById('bi-explainer-banner').classList.toggle('hidden');
+    });
+    document.getElementById('btn-close-bi-info').addEventListener('click', () => {
+      document.getElementById('bi-explainer-banner').classList.add('hidden');
+    });
 
     document.getElementById('btn-carregar-ranking').addEventListener('click', gerarTop10Ranking);
     document.getElementById('ranking-estado-select').addEventListener('change', gerarTop10Ranking);
