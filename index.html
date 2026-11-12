@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Consulta pública e transparente aos gastos da Cota Parlamentar (CEAP) dos Deputados Federais do Brasil em 2025 e 2026 via API Dados Abertos." />
+  <title>Transparência Parlamentar • Gastos dos Deputados (2025–2026)</title>
+  <!-- Favicon SVG embutido para publicação limpa no GitHub Pages -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230f172a'/%3E%3Cpath d='M18 42h28v4H18zm4-18h4v14h-4zm8-6h4v20h-4zm8 10h4v10h-4z' fill='%2334d399'/%3E%3C/svg%3E" />
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Fonte Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+  <!-- Cabeçalho Principal -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-20">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-slate-900 text-emerald-400 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
+            Transparência Parlamentar (2025 – 2026)
+          </h1>
+          <p class="text-xs text-slate-500">
+            Cota para o Exercício da Atividade Parlamentar • Câmara dos Deputados
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 self-start sm:self-auto">
+        <span class="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+          API Oficial Ao Vivo
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Conteúdo Principal -->
+  <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+
+    <!-- Navegação por Abas -->
+    <nav aria-label="Navegação principal" class="grid grid-cols-1 sm:inline-flex gap-1.5 bg-slate-200/70 p-1.5 rounded-2xl w-full sm:w-auto">
+      <button
+        type="button"
+        id="tab-consulta"
+        class="px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl bg-white text-slate-900 shadow-xs transition cursor-pointer"
+      >
+        1. Consulta por Deputado
+      </button>
+      <button
+        type="button"
+        id="tab-ranking"
+        class="px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl text-slate-600 hover:text-slate-900 transition cursor-pointer"
+      >
+        2. Top 10 Maiores Gastos
+      </button>
+      <button
+        type="button"
+        id="tab-bancada"
+        class="px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl text-slate-600 hover:text-slate-900 transition cursor-pointer"
+      >
+        3. Deputados por Estado
+      </button>
+    </nav>
+
+    <!-- ===================================================================== -->
+    <!-- ABA 1: CONSULTA POR ESTADO E NOME DO DEPUTADO (2025 E 2026)           -->
+    <!-- ===================================================================== -->
+    <div id="panel-consulta" class="space-y-6">
+
+      <!-- Formulário de Busca -->
+      <section aria-label="Filtros de busca individual" class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs">
+        <form id="search-form" class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
+          <div class="sm:col-span-5">
+            <label for="estado-select" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
+              Estado (UF)
+            </label>
+            <select
+              id="estado-select"
+              class="uf-selector w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:bg-white focus:border-slate-900 transition cursor-pointer"
+            ></select>
+          </div>
+
+          <div class="sm:col-span-5">
+            <label for="deputado-input" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
+              Nome do Deputado
+            </label>
+            <input
+              type="text"
+              id="deputado-input"
+              placeholder="Ex.: Natália, Nikolas, Tabata..."
+              autocomplete="off"
+              class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition"
+            />
+          </div>
+
+          <div class="sm:col-span-2">
+            <button
+              type="submit"
+              class="w-full py-2.5 px-4 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition cursor-pointer"
+            >
+              Consultar
+            </button>
+          </div>
+        </form>
+
+        <!-- Lista de Parlamentares Encontrados -->
+        <div id="deputados-list-wrapper" class="hidden mt-5 pt-5 border-t border-slate-100">
+          <p id="deputados-list-title" class="text-xs font-medium text-slate-500 mb-3"></p>
+          <div id="deputados-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5"></div>
+        </div>
+      </section>
+
+      <!-- Card Orientativo / Estado Inicial -->
+      <div id="feedback-box" class="bg-white border border-slate-200 rounded-2xl p-8 text-center">
+        <p id="feedback-title" class="text-sm sm:text-base font-semibold text-slate-800">
+          Selecione um Estado ou digite o nome do deputado
+        </p>
+        <p id="feedback-subtitle" class="text-xs sm:text-sm text-slate-500 mt-1">
+          Compare os gastos registrados na Cota Parlamentar nos anos de 2025 e 2026 e acesse as notas fiscais.
+        </p>
+      </div>
+
+      <!-- Painel de Resultados do Deputado Selecionado -->
+      <section id="expenses-section" class="hidden space-y-6">
+
+        <!-- Cabeçalho do Deputado -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="flex items-center gap-3.5">
+            <img
+              id="dep-photo"
+              src=""
+              alt="Foto do deputado"
+              class="w-14 h-18 rounded-xl object-cover object-top bg-slate-100 border border-slate-200 shrink-0"
+            />
+            <div>
+              <h2 id="dep-name" class="text-lg font-bold text-slate-900"></h2>
+              <p id="dep-info" class="text-xs sm:text-sm text-slate-500"></p>
+            </div>
+          </div>
+          <div class="sm:text-right border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100">
+            <span class="block text-xs text-slate-500">Soma Total (2025 + 2026)</span>
+            <span id="total-geral" class="text-xl sm:text-2xl font-bold text-slate-900">R$ 0,00</span>
+          </div>
+        </div>
+
+        <!-- Cards Comparativos: 2025 e 2026 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <button
+            type="button"
+            id="card-2025"
+            class="text-left bg-white border-2 border-slate-900 rounded-2xl p-5 transition cursor-pointer"
+          >
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Ano 2025</span>
+              <span id="count-2025" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">0 notas</span>
+            </div>
+            <p id="sum-2025" class="text-2xl sm:text-3xl font-bold text-slate-900 mt-1">R$ 0,00</p>
+            <p class="text-xs text-slate-400 mt-2">Clique para listar as notas de 2025</p>
+          </button>
+
+          <button
+            type="button"
+            id="card-2026"
+            class="text-left bg-white border border-slate-200 hover:border-slate-400 rounded-2xl p-5 transition cursor-pointer"
+          >
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Ano 2026</span>
+              <span id="count-2026" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">0 notas</span>
+            </div>
+            <p id="sum-2026" class="text-2xl sm:text-3xl font-bold text-slate-900 mt-1">R$ 0,00</p>
+            <p class="text-xs text-slate-400 mt-2">Clique para listar as notas de 2026</p>
+          </button>
+        </div>
+
+        <!-- Tabela de Notas Fiscais do Ano Ativo -->
+        <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
+            <h3 id="table-title" class="text-sm sm:text-base font-semibold text-slate-800">
+              Detalhamento — 2025
+            </h3>
+            <span id="table-subtitle" class="text-xs text-slate-500"></span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-sm">
+              <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase">
+                <tr>
+                  <th class="px-5 py-3">Data</th>
+                  <th class="px-5 py-3">Tipo de Despesa</th>
+                  <th class="px-5 py-3">Fornecedor</th>
+                  <th class="px-5 py-3 text-right">Valor</th>
+                  <th class="px-5 py-3 text-center">Nota</th>
+                </tr>
+              </thead>
+              <tbody id="expenses-tbody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- ABA 2: RANKING TOP 10 MAIORES DESPESAS                                -->
+    <!-- ===================================================================== -->
+    <div id="panel-ranking" class="hidden space-y-6">
+
+      <section aria-label="Filtros do ranking" class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs">
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
+          <div class="sm:col-span-5">
+            <label for="ranking-estado-select" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
+              Filtrar por Estado (UF)
+            </label>
+            <select
+              id="ranking-estado-select"
+              class="uf-selector-ranking w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:bg-white focus:border-slate-900 transition cursor-pointer"
+            ></select>
+          </div>
+
+          <div class="sm:col-span-4">
+            <label for="ranking-ano-select" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
+              Período
+            </label>
+            <select
+              id="ranking-ano-select"
+              class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:bg-white focus:border-slate-900 transition cursor-pointer"
+            >
+              <option value="2025">Ano 2025</option>
+              <option value="2026">Ano 2026</option>
+              <option value="ALL">Soma 2025 + 2026</option>
+            </select>
+          </div>
+
+          <div class="sm:col-span-3">
+            <button
+              type="button"
+              id="btn-carregar-ranking"
+              class="w-full py-2.5 px-4 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition cursor-pointer"
+            >
+              Atualizar Top 10
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Barra de Progresso -->
+      <div id="ranking-progress-box" class="hidden bg-white border border-slate-200 rounded-2xl p-6 text-center space-y-3">
+        <p id="ranking-progress-text" class="text-sm font-semibold text-slate-800">
+          Consultando despesas na API da Câmara...
+        </p>
+        <div class="w-full max-w-md mx-auto h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div id="ranking-progress-bar" class="h-full bg-slate-900 rounded-full transition-all duration-200" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Resultado Top 10 -->
+      <section id="ranking-results-box" class="hidden bg-white border border-slate-200 rounded-2xl overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-200 bg-slate-50/70">
+          <h2 id="ranking-title" class="text-base font-bold text-slate-900">
+            Top 10 Maiores Despesas
+          </h2>
+          <p id="ranking-subtitle" class="text-xs text-slate-500 mt-0.5">
+            Ordenado do maior para o menor valor gasto • Clique em um deputado para ver suas notas
+          </p>
+        </div>
+        <div id="ranking-list" class="divide-y divide-slate-100"></div>
+      </section>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- ABA 3: BANCADA COMPLETA POR ESTADO                                    -->
+    <!-- ===================================================================== -->
+    <div id="panel-bancada" class="hidden space-y-6">
+
+      <section aria-label="Filtros da bancada estadual" class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs">
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
+          <div class="sm:col-span-5">
+            <label for="bancada-estado-select" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
+              Estado (UF)
+            </label>
+            <select
+              id="bancada-estado-select"
+              class="uf-selector-bancada w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:bg-white focus:border-slate-900 transition cursor-pointer"
+            ></select>
+          </div>
+          <div class="sm:col-span-7">
+            <label for="bancada-filtro-nome" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
+              Filtrar deputado na lista
+            </label>
+            <input
+              type="text"
+              id="bancada-filtro-nome"
+              placeholder="Digite para filtrar por nome ou partido..."
+              autocomplete="off"
+              class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 transition"
+            />
+          </div>
+        </div>
+      </section>
+
+      <div id="bancada-header" class="flex items-center justify-between">
+        <h2 id="bancada-title" class="text-base font-bold text-slate-900">Deputados Federais</h2>
+        <span id="bancada-count" class="text-xs font-medium px-3 py-1 rounded-full bg-slate-200/70 text-slate-700">0 parlamentares</span>
+      </div>
+
+      <div id="bancada-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </div>
+
+  </main>
+
+  <!-- Rodapé -->
+  <footer class="bg-white border-t border-slate-200 mt-12">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+      <p>
+        Dados públicos obtidos em tempo real via
+        <a href="https://dadosabertos.camara.leg.br/" target="_blank" rel="noopener noreferrer" class="font-semibold text-slate-700 hover:underline">
+          API Dados Abertos da Câmara dos Deputados
+        </a>
+      </p>
+      <p>Projeto Open Source • Pronto para GitHub Pages</p>
+    </div>
+  </footer>
+
+  <script>
+    const BASE_API = 'https://dadosabertos.camara.leg.br/api/v2';
+
+    const ESTADOS_BRASIL = [
+      ['AC', 'Acre (AC)'], ['AL', 'Alagoas (AL)'], ['AP', 'Amapá (AP)'],
+      ['AM', 'Amazonas (AM)'], ['BA', 'Bahia (BA)'], ['CE', 'Ceará (CE)'],
+      ['DF', 'Distrito Federal (DF)'], ['ES', 'Espírito Santo (ES)'], ['GO', 'Goiás (GO)'],
+      ['MA', 'Maranhão (MA)'], ['MT', 'Mato Grosso (MT)'], ['MS', 'Mato Grosso do Sul (MS)'],
+      ['MG', 'Minas Gerais (MG)'], ['PA', 'Pará (PA)'], ['PB', 'Paraíba (PB)'],
+      ['PR', 'Paraná (PR)'], ['PE', 'Pernambuco (PE)'], ['PI', 'Piauí (PI)'],
+      ['RJ', 'Rio de Janeiro (RJ)'], ['RN', 'Rio Grande do Norte (RN)'], ['RS', 'Rio Grande do Sul (RS)'],
+      ['RO', 'Rondônia (RO)'], ['RR', 'Roraima (RR)'], ['SC', 'Santa Catarina (SC)'],
+      ['SP', 'São Paulo (SP)'], ['SE', 'Sergipe (SE)'], ['TO', 'Tocantins (TO)']
+    ];
+
+    let gastosPorAno = { 2025: [], 2026: [] };
+    let bancadaAtual = [];
+    let rankingCarregado = false;
+    let bancadaCarregada = false;
+
+    // Preenche os seletores de Estado (UF)
+    function inicializarSeletoresUF() {
+      const opcoesEstados = ESTADOS_BRASIL.map(([uf, nome]) => `<option value="${uf}">${nome}</option>`).join('');
+
+      document.getElementById('estado-select').innerHTML =
+        `<option value="">Todos os Estados</option>${opcoesEstados}`;
+
+      const rankingSelect = document.getElementById('ranking-estado-select');
+      rankingSelect.innerHTML = `${opcoesEstados}<option value="ALL">Brasil (Amostra Nacional • 40 deputados)</option>`;
+      rankingSelect.value = 'RN';
+
+      const bancadaSelect = document.getElementById('bancada-estado-select');
+      bancadaSelect.innerHTML = opcoesEstados;
+      bancadaSelect.value = 'RN';
+    }
+
+    // Formata Moeda Real Brasileira
+    function formatBRL(valor) {
+      return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      }).format(Number(valor) || 0);
+    }
+
+    // Formata data ISO para DD/MM/AAAA
+    function formatDate(isoDate) {
+      if (!isoDate) return '—';
+      const [y, m, d] = isoDate.split('T')[0].split('-');
+      return (y && m && d) ? `${d}/${m}/${y}` : isoDate;
+    }
+
+    // Remove acentos para buscas
+    function normalizeText(str) {
+      return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    }
+
+    // Avatar SVG fallback caso a foto oficial falhe
+    function getAvatarFallback(nome) {
+      const iniciais = (nome || 'DP').split(' ').filter(Boolean).slice(0, 2).map(n => n[0]).join('');
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="120"><rect width="100" height="120" fill="#e2e8f0"/><text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle" font-family="Inter,sans-serif" font-size="32" font-weight="600" fill="#475569">${iniciais}</text></svg>`;
+      return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+    }
+
+    // Chamada HTTP com fallback automático de CORS
+    async function fetchApi(url) {
+      const rotas = [
+        url,
+        `https://corsproxy.io/?${encodeURIComponent(url)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+      ];
+
+      for (const rota of rotas) {
+        try {
+          const resp = await fetch(rota, { headers: { 'Accept': 'application/json' } });
+          if (resp.ok) return await resp.json();
+        } catch (e) {
+          // Tenta a próxima rota
+        }
+      }
+      throw new Error('Falha ao conectar à API da Câmara.');
+    }
+
+    // Busca todas as páginas de despesas de um deputado em um ano específico
+    async function buscarDespesasAno(deputadoId, ano) {
+      let pagina = 1;
+      let todosItens = [];
+
+      while (pagina <= 15) {
+        const url = `${BASE_API}/deputados/${deputadoId}/despesas?ano=${ano}&itens=100&pagina=${pagina}&ordem=DESC&ordenarPor=dataDocumento`;
+        const json = await fetchApi(url);
+        const dados = json.dados || [];
+        todosItens = todosItens.concat(dados);
+
+        const temProxima = Array.isArray(json.links) && json.links.some(l => l.rel === 'next');
+        if (!temProxima || dados.length < 100) break;
+        pagina++;
+      }
+
+      return todosItens;
+    }
+
+    // Normaliza valores líquidos (converte saldo devedor negativo da API em valor positivo gasto)
+    function calcularSomaDespesas(lista) {
+      const somaBruta = lista.reduce((acc, item) => acc + (Number(item.valorLiquido) || 0), 0);
+      return Math.abs(somaBruta);
+    }
+
+    // =========================================================================
+    // NAVEGAÇÃO ENTRE ABAS
+    // =========================================================================
+    function ativarAba(nomeAba) {
+      const abas = ['consulta', 'ranking', 'bancada'];
+      abas.forEach(aba => {
+        const btn = document.getElementById(`tab-${aba}`);
+        const panel = document.getElementById(`panel-${aba}`);
+        if (aba === nomeAba) {
+          panel.classList.remove('hidden');
+          btn.className = 'px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl bg-white text-slate-900 shadow-xs transition cursor-pointer';
+        } else {
+          panel.classList.add('hidden');
+          btn.className = 'px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl text-slate-600 hover:text-slate-900 transition cursor-pointer';
+        }
+      });
+
+      if (nomeAba === 'ranking' && !rankingCarregado) {
+        gerarTop10Ranking();
+      }
+      if (nomeAba === 'bancada' && !bancadaCarregada) {
+        carregarBancadaEstado();
+      }
+    }
+
+    // =========================================================================
+    // ABA 1: CONSULTA INDIVIDUAL (2025 E 2026)
+    // =========================================================================
+    async function buscarDeputados(e) {
+      if (e) e.preventDefault();
+
+      const uf = document.getElementById('estado-select').value.trim();
+      const nome = document.getElementById('deputado-input').value.trim();
+
+      if (!uf && !nome) {
+        document.getElementById('feedback-box').classList.remove('hidden');
+        document.getElementById('feedback-title').textContent = 'Preencha pelo menos um campo';
+        document.getElementById('feedback-subtitle').textContent = 'Escolha um Estado ou digite o nome de um deputado para iniciar.';
+        return;
+      }
+
+      const params = new URLSearchParams({ ordem: 'ASC', ordenarPor: 'nome' });
+      if (uf) params.append('siglaUf', uf);
+      if (nome) params.append('nome', nome);
+
+      const wrapper = document.getElementById('deputados-list-wrapper');
+      const title = document.getElementById('deputados-list-title');
+      const listEl = document.getElementById('deputados-list');
+
+      wrapper.classList.remove('hidden');
+      title.textContent = 'Buscando deputados na API...';
+      listEl.innerHTML = '';
+
+      try {
+        const json = await fetchApi(`${BASE_API}/deputados?${params.toString()}`);
+        const lista = json.dados || [];
+
+        if (lista.length === 0) {
+          title.textContent = 'Nenhum deputado encontrado com esses filtros.';
+          return;
+        }
+
+        title.textContent = `${lista.length} ${lista.length === 1 ? 'deputado encontrado' : 'deputados encontrados'} — clique para ver os gastos:`;
+        listEl.innerHTML = '';
+
+        lista.forEach(dep => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 hover:border-slate-900 hover:bg-slate-50 text-left transition cursor-pointer';
+
+          const fallback = getAvatarFallback(dep.nome);
+          btn.innerHTML = `
+            <img src="${dep.urlFoto || fallback}" alt="${dep.nome}" class="w-10 h-12 rounded-lg object-cover object-top bg-slate-100 shrink-0" />
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-slate-900 truncate">${dep.nome}</p>
+              <p class="text-xs text-slate-500">${dep.siglaPartido || 'S/P'} • ${dep.siglaUf || ''}</p>
+            </div>
+          `;
+
+          btn.querySelector('img').addEventListener('error', function () { this.src = fallback; }, { once: true });
+          btn.addEventListener('click', () => carregarGastosDeputado(dep));
+          listEl.appendChild(btn);
+        });
+
+        if (lista.length === 1) {
+          carregarGastosDeputado(lista[0]);
+        }
+      } catch (err) {
+        title.textContent = 'Erro ao consultar a API. Tente novamente em instantes.';
+      }
+    }
+
+    async function carregarGastosDeputado(dep) {
+      document.getElementById('feedback-box').classList.add('hidden');
+      document.getElementById('deputados-list-wrapper').classList.add('hidden');
+      document.getElementById('expenses-section').classList.remove('hidden');
+
+      const fallback = getAvatarFallback(dep.nome);
+      const photoEl = document.getElementById('dep-photo');
+      photoEl.src = dep.urlFoto || fallback;
+      photoEl.onerror = () => { photoEl.src = fallback; };
+
+      document.getElementById('dep-name').textContent = dep.nome;
+      document.getElementById('dep-info').textContent = `${dep.siglaPartido || 'Sem partido'} • Estado: ${dep.siglaUf || '—'}`;
+      document.getElementById('sum-2025').textContent = 'Carregando...';
+      document.getElementById('sum-2026').textContent = 'Carregando...';
+      document.getElementById('total-geral').textContent = '...';
+      document.getElementById('expenses-tbody').innerHTML = `
+        <tr><td colspan="5" class="px-5 py-8 text-center text-slate-400">Consultando notas fiscais de 2025 e 2026...</td></tr>
+      `;
+
+      try {
+        const [despesas2025, despesas2026] = await Promise.all([
+          buscarDespesasAno(dep.id, 2025),
+          buscarDespesasAno(dep.id, 2026)
+        ]);
+
+        gastosPorAno = { 2025: despesas2025, 2026: despesas2026 };
+
+        const total2025 = calcularSomaDespesas(despesas2025);
+        const total2026 = calcularSomaDespesas(despesas2026);
+
+        document.getElementById('sum-2025').textContent = formatBRL(total2025);
+        document.getElementById('count-2025').textContent = `${despesas2025.length} notas`;
+
+        document.getElementById('sum-2026').textContent = formatBRL(total2026);
+        document.getElementById('count-2026').textContent = `${despesas2026.length} notas`;
+
+        document.getElementById('total-geral').textContent = formatBRL(total2025 + total2026);
+
+        selecionarAnoTabela(2025);
+      } catch (err) {
+        document.getElementById('expenses-section').classList.add('hidden');
+        document.getElementById('feedback-box').classList.remove('hidden');
+        document.getElementById('feedback-title').textContent = 'Erro ao carregar os gastos';
+        document.getElementById('feedback-subtitle').textContent = 'Não foi possível obter as despesas de 2025 e 2026.';
+      }
+    }
+
+    function selecionarAnoTabela(ano) {
+      const card2025 = document.getElementById('card-2025');
+      const card2026 = document.getElementById('card-2026');
+
+      if (ano === 2025) {
+        card2025.className = 'text-left bg-white border-2 border-slate-900 rounded-2xl p-5 transition cursor-pointer';
+        card2026.className = 'text-left bg-white border border-slate-200 hover:border-slate-400 rounded-2xl p-5 transition cursor-pointer';
+      } else {
+        card2026.className = 'text-left bg-white border-2 border-slate-900 rounded-2xl p-5 transition cursor-pointer';
+        card2025.className = 'text-left bg-white border border-slate-200 hover:border-slate-400 rounded-2xl p-5 transition cursor-pointer';
+      }
+
+      const lista = gastosPorAno[ano] || [];
+      document.getElementById('table-title').textContent = `Detalhamento de Gastos — ${ano}`;
+      document.getElementById('table-subtitle').textContent = `${lista.length} registros`;
+
+      const tbody = document.getElementById('expenses-tbody');
+      if (lista.length === 0) {
+        tbody.innerHTML = `
+          <tr><td colspan="5" class="px-5 py-8 text-center text-slate-400">Nenhuma despesa registrada em ${ano}.</td></tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = lista.map(item => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="px-5 py-3 whitespace-nowrap text-xs text-slate-500">${formatDate(item.dataDocumento)}</td>
+          <td class="px-5 py-3 text-xs text-slate-700">${item.tipoDespesa || '—'}</td>
+          <td class="px-5 py-3 text-xs font-medium text-slate-900">${item.nomeFornecedor || '—'}</td>
+          <td class="px-5 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold text-slate-900">
+            ${formatBRL(Math.abs(Number(item.valorLiquido) || 0))}
+          </td>
+          <td class="px-5 py-3 whitespace-nowrap text-center text-xs">
+            ${item.urlDocumento
+              ? `<a href="${item.urlDocumento}" target="_blank" rel="noopener noreferrer" class="text-slate-900 font-semibold hover:underline">PDF</a>`
+              : '<span class="text-slate-300">—</span>'}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // =========================================================================
+    // ABA 2: RANKING TOP 10 MAIORES DESPESAS (ORDEM DECRESCENTE REAL)
+    // =========================================================================
+    async function calcularTotalDeputadoRanking(depId, anoFiltro) {
+      if (anoFiltro === 'ALL') {
+        const [d25, d26] = await Promise.all([
+          buscarDespesasAno(depId, 2025),
+          buscarDespesasAno(depId, 2026)
+        ]);
+        return {
+          total: calcularSomaDespesas(d25) + calcularSomaDespesas(d26),
+          qtdNotas: d25.length + d26.length
+        };
+      } else {
+        const despesas = await buscarDespesasAno(depId, Number(anoFiltro));
+        return {
+          total: calcularSomaDespesas(despesas),
+          qtdNotas: despesas.length
+        };
+      }
+    }
+
+    async function gerarTop10Ranking() {
+      rankingCarregado = true;
+      const uf = document.getElementById('ranking-estado-select').value;
+      const anoFiltro = document.getElementById('ranking-ano-select').value;
+
+      const progressBox = document.getElementById('ranking-progress-box');
+      const progressText = document.getElementById('ranking-progress-text');
+      const progressBar = document.getElementById('ranking-progress-bar');
+      const resultsBox = document.getElementById('ranking-results-box');
+      const rankingList = document.getElementById('ranking-list');
+
+      resultsBox.classList.add('hidden');
+      progressBox.classList.remove('hidden');
+      progressBar.style.width = '5%';
+      progressText.textContent = 'Buscando parlamentares na API da Câmara...';
+
+      try {
+        const params = new URLSearchParams({ ordem: 'ASC', ordenarPor: 'nome' });
+        if (uf !== 'ALL') params.append('siglaUf', uf);
+
+        const json = await fetchApi(`${BASE_API}/deputados?${params.toString()}`);
+        let deputados = json.dados || [];
+
+        if (uf === 'ALL' && deputados.length > 40) {
+          deputados = deputados.slice(0, 40);
+        }
+
+        const resultados = [];
+        const tamanhoLote = 5;
+
+        for (let i = 0; i < deputados.length; i += tamanhoLote) {
+          const lote = deputados.slice(i, i + tamanhoLote);
+          const conclusoes = await Promise.all(
+            lote.map(async dep => {
+              try {
+                const { total, qtdNotas } = await calcularTotalDeputadoRanking(dep.id, anoFiltro);
+                return { dep, total, qtdNotas };
+              } catch (e) {
+                return { dep, total: 0, qtdNotas: 0 };
+              }
+            })
+          );
+
+          resultados.push(...conclusoes);
+
+          const processados = Math.min(i + tamanhoLote, deputados.length);
+          const pct = Math.round((processados / deputados.length) * 100);
+          progressBar.style.width = `${pct}%`;
+          progressText.textContent = `Calculando despesas: ${processados} de ${deputados.length} deputados (${pct}%)...`;
+        }
+
+        const top10 = resultados
+          .filter(item => item.total > 0)
+          .sort((a, b) => b.total - a.total)
+          .slice(0, 10);
+
+        const maiorValor = top10.length > 0 ? Math.max(top10[0].total, 1) : 1;
+        const labelAno = anoFiltro === 'ALL' ? '2025 + 2026' : anoFiltro;
+        const labelUf = uf === 'ALL' ? 'Amostra Nacional (40 parlamentares)' : `Bancada ${uf}`;
+
+        document.getElementById('ranking-title').textContent = `Top 10 Maiores Despesas — ${labelUf} (${labelAno})`;
+        rankingList.innerHTML = '';
+
+        if (top10.length === 0) {
+          rankingList.innerHTML = `<div class="p-8 text-center text-sm text-slate-500">Nenhuma despesa encontrada para os filtros selecionados.</div>`;
+          progressBox.classList.add('hidden');
+          resultsBox.classList.remove('hidden');
+          return;
+        }
+
+        top10.forEach((item, idx) => {
+          const { dep, total, qtdNotas } = item;
+          const pctBarra = Math.min(100, Math.max(4, Math.round((total / maiorValor) * 100)));
+          const fallback = getAvatarFallback(dep.nome);
+
+          let badgePos = 'bg-slate-100 text-slate-600';
+          if (idx === 0) badgePos = 'bg-amber-500 text-white shadow-xs';
+          else if (idx === 1) badgePos = 'bg-slate-400 text-white shadow-xs';
+          else if (idx === 2) badgePos = 'bg-amber-700 text-white shadow-xs';
+
+          const row = document.createElement('button');
+          row.type = 'button';
+          row.className = 'w-full px-5 py-4 flex items-center gap-4 hover:bg-slate-50 transition text-left cursor-pointer';
+          row.innerHTML = `
+            <span class="w-8 h-8 rounded-xl ${badgePos} text-xs font-bold flex items-center justify-center shrink-0">
+              ${idx + 1}º
+            </span>
+            <img src="${dep.urlFoto || fallback}" alt="${dep.nome}" class="w-11 h-14 rounded-xl object-cover object-top bg-slate-100 border border-slate-200 shrink-0" />
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <div>
+                  <p class="text-sm font-bold text-slate-900 truncate">${dep.nome}</p>
+                  <p class="text-xs text-slate-500">${dep.siglaPartido || 'S/P'} • ${dep.siglaUf || ''} • ${qtdNotas} notas</p>
+                </div>
+                <div class="sm:text-right shrink-0">
+                  <p class="text-sm sm:text-base font-bold text-slate-900">${formatBRL(total)}</p>
+                  <p class="text-[11px] text-slate-400">${pctBarra}% do 1º colocado</p>
+                </div>
+              </div>
+              <div class="mt-2 w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full bg-slate-900 rounded-full transition-all duration-300" style="width: ${pctBarra}%"></div>
+              </div>
+            </div>
+          `;
+
+          row.querySelector('img').addEventListener('error', function () { this.src = fallback; }, { once: true });
+          row.addEventListener('click', () => {
+            ativarAba('consulta');
+            carregarGastosDeputado(dep).then(() => {
+              if (anoFiltro === '2026') selecionarAnoTabela(2026);
+            });
+          });
+
+          rankingList.appendChild(row);
+        });
+
+        progressBox.classList.add('hidden');
+        resultsBox.classList.remove('hidden');
+      } catch (err) {
+        progressBox.classList.add('hidden');
+        resultsBox.classList.remove('hidden');
+        rankingList.innerHTML = `<div class="p-8 text-center text-sm text-slate-500">Erro ao gerar o ranking. Tente novamente.</div>`;
+      }
+    }
+
+    // =========================================================================
+    // ABA 3: LISTAGEM DE DEPUTADOS POR ESTADO
+    // =========================================================================
+    async function carregarBancadaEstado() {
+      bancadaCarregada = true;
+      const uf = document.getElementById('bancada-estado-select').value;
+      const gridEl = document.getElementById('bancada-grid');
+      const titleEl = document.getElementById('bancada-title');
+      const countEl = document.getElementById('bancada-count');
+
+      titleEl.textContent = `Deputados Federais — ${uf}`;
+      countEl.textContent = 'Carregando...';
+      gridEl.innerHTML = `<div class="col-span-full bg-white border border-slate-200 rounded-2xl p-8 text-center text-sm text-slate-400">Buscando bancada de ${uf}...</div>`;
+
+      try {
+        const json = await fetchApi(`${BASE_API}/deputados?siglaUf=${uf}&ordem=ASC&ordenarPor=nome`);
+        bancadaAtual = json.dados || [];
+        renderizarBancadaFiltrada();
+      } catch (err) {
+        countEl.textContent = 'Erro';
+        gridEl.innerHTML = `<div class="col-span-full bg-white border border-slate-200 rounded-2xl p-8 text-center text-sm text-slate-500">Falha ao carregar deputados de ${uf}.</div>`;
+      }
+    }
+
+    function renderizarBancadaFiltrada() {
+      const termo = normalizeText(document.getElementById('bancada-filtro-nome').value);
+      const gridEl = document.getElementById('bancada-grid');
+      const countEl = document.getElementById('bancada-count');
+
+      const filtrados = bancadaAtual.filter(dep => {
+        if (!termo) return true;
+        return normalizeText(dep.nome).includes(termo) || normalizeText(dep.siglaPartido).includes(termo);
+      });
+
+      countEl.textContent = `${filtrados.length} ${filtrados.length === 1 ? 'parlamentar' : 'parlamentares'}`;
+      gridEl.innerHTML = '';
+
+      if (filtrados.length === 0) {
+        gridEl.innerHTML = `<div class="col-span-full bg-white border border-slate-200 rounded-2xl p-8 text-center text-sm text-slate-500">Nenhum parlamentar encontrado para "${termo}".</div>`;
+        return;
+      }
+
+      filtrados.forEach(dep => {
+        const fallback = getAvatarFallback(dep.nome);
+        const card = document.createElement('div');
+        card.className = 'bg-white border border-slate-200 hover:border-slate-400 rounded-2xl p-4 flex flex-col justify-between gap-3 transition';
+        card.innerHTML = `
+          <div class="flex items-center gap-3.5">
+            <img src="${dep.urlFoto || fallback}" alt="${dep.nome}" class="w-12 h-15 rounded-xl object-cover object-top bg-slate-100 border border-slate-200 shrink-0" />
+            <div class="min-w-0">
+              <h3 class="text-sm font-bold text-slate-900 truncate">${dep.nome}</h3>
+              <p class="text-xs text-slate-500 mt-0.5">${dep.siglaPartido || 'S/P'} • ${dep.siglaUf || ''}</p>
+              ${dep.email ? `<p class="text-[11px] text-slate-400 truncate mt-1">${dep.email}</p>` : ''}
+            </div>
+          </div>
+          <button
+            type="button"
+            class="w-full py-2 px-3 text-xs font-semibold text-slate-800 bg-slate-100 hover:bg-slate-900 hover:text-white rounded-xl transition cursor-pointer"
+          >
+            Ver Gastos (2025 e 2026)
+          </button>
+        `;
+
+        card.querySelector('img').addEventListener('error', function () { this.src = fallback; }, { once: true });
+        card.querySelector('button').addEventListener('click', () => {
+          ativarAba('consulta');
+          carregarGastosDeputado(dep);
+        });
+
+        gridEl.appendChild(card);
+      });
+    }
+
+    // Inicialização e Eventos
+    inicializarSeletoresUF();
+
+    document.getElementById('tab-consulta').addEventListener('click', () => ativarAba('consulta'));
+    document.getElementById('tab-ranking').addEventListener('click', () => ativarAba('ranking'));
+    document.getElementById('tab-bancada').addEventListener('click', () => ativarAba('bancada'));
+
+    document.getElementById('search-form').addEventListener('submit', buscarDeputados);
+    document.getElementById('estado-select').addEventListener('change', buscarDeputados);
+    document.getElementById('card-2025').addEventListener('click', () => selecionarAnoTabela(2025));
+    document.getElementById('card-2026').addEventListener('click', () => selecionarAnoTabela(2026));
+
+    document.getElementById('btn-carregar-ranking').addEventListener('click', gerarTop10Ranking);
+    document.getElementById('ranking-estado-select').addEventListener('change', gerarTop10Ranking);
+    document.getElementById('ranking-ano-select').addEventListener('change', gerarTop10Ranking);
+
+    document.getElementById('bancada-estado-select').addEventListener('change', carregarBancadaEstado);
+    document.getElementById('bancada-filtro-nome').addEventListener('input', renderizarBancadaFiltrada);
+  </script>
+</body>
+</html>
